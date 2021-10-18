@@ -6,7 +6,7 @@ module.exports = async function (siteUrl) {
   let mirrors = await ideal_mirror("https://linux.xidian.edu.cn/mirrors/status.json");
 
   for (const m of mirrors) {
-    m["help"] = "/git/xdlinux/mirror-help/src/master" + m.url + ".md";
+    m["help"] = "https://linux.xidian.edu.cn/git/xdlinux/mirror-help/src/master" + m.url + ".md";
   }
 
   return {
