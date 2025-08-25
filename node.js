@@ -37,7 +37,11 @@ const load = async (source) => {
       return null;
     }
   } else {
-    return await Timeout.wrap(source(), timeout, 'Timeout').catch(() => null);
+    try {
+      return await Timeout.wrap(source(), timeout, 'Timeout').catch(() => null);
+    } catch (e) {
+      return null;
+    }
   }
 }
 
