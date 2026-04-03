@@ -55,11 +55,10 @@ const init = (config, mirrorzRepo) => {
 };
 const load = async (source) => {
   if (typeof source == "string") {
-    const resp = await fetch(source);
-    if (resp === null) return null;
-    const json = await resp.json().catch((_) => null);
-    if (json === null) return null;
     try {
+      const resp = await fetch(source);
+      const json = await resp.json().catch((_) => null);
+      if (json === null) return null;
       return lint(json);
     } catch (e) {
       return null;
