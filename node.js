@@ -1,5 +1,6 @@
 const lint = require("./lint");
 const { readFile } = require("node:fs/promises");
+const path = require("node:path");
 
 function isNodeRuntime() {
   return typeof process !== "undefined" && !!process.versions?.node;
@@ -22,6 +23,29 @@ function isUrlUnderBase(requestUrl, baseUrl) {
   );
 }
 
+function localPathForUrl(requestUrl, baseUrl, localRootDir) {
+  if (!isUrlUnderBase(requestUrl, baseUrl)) {
+    return null;
+  }
+
+  const basePath = baseUrl.pathname.endsWith("/")
+    ? baseUrl.pathname
+    : `${baseUrl.pathname}/`;
+  const relativePath = requestUrl.pathname.startsWith(basePath)
+    ? requestUrl.pathname.slice(basePath.length)
+    : requestUrl.pathname.slice(baseUrl.pathname.length);
+
+  const localRoot = path.resolve(localRootDir);
+  const candidate = path.resolve(localRoot, `.${path.sep}${relativePath}`);
+
+  const rel = path.relative(localRoot, candidate);
+  if (rel.startsWith("..") || path.isAbsolute(rel)) {
+    return null;
+  }
+
+  return candidate;
+}
+
 const init = (config, mirrorzRepo) => {
   const jsdom = require("jsdom");
   const { JSDOM } = jsdom;
@@ -38,16 +62,18 @@ const init = (config, mirrorzRepo) => {
   });
   async function fetchV6First(u, opt) {
     const url = typeof u === "string" ? u : (u?.url ?? String(u));
-    const localFetchFile = isNodeRuntime()
+    const localFetchRoot = isNodeRuntime()
       ? process.env.MIRRORZ_LOCAL_FETCH_FILE
       : undefined;
 
-    if (localFetchFile) {
+    if (localFetchRoot) {
       /* A hack for more reliable local file fetching on mirrorz server */
       const requestUrl = new URL(url, config.url);
       const baseUrl = new URL(config.url);
-      if (isUrlUnderBase(requestUrl, baseUrl)) {
-        const content = await readFile(localFetchFile);
+      const localPath = localPathForUrl(requestUrl, baseUrl, localFetchRoot);
+      if (localPath) {
+        console.log(`Accessing local file: ${localPath}`)
+        const content = await readFile(localPath);
         return new fetch_extra.Response(content, {
           status: 200,
           headers: { "content-type": "application/json" },
