@@ -1,4 +1,26 @@
 const lint = require("./lint");
+const { readFile } = require("node:fs/promises");
+
+function isNodeRuntime() {
+  return typeof process !== "undefined" && !!process.versions?.node;
+}
+
+function isUrlUnderBase(requestUrl, baseUrl) {
+  if (requestUrl.origin !== baseUrl.origin) {
+    return false;
+  }
+  if (baseUrl.pathname === "/") {
+    return true;
+  }
+
+  const normalizedBase = baseUrl.pathname.endsWith("/")
+    ? baseUrl.pathname
+    : `${baseUrl.pathname}/`;
+  return (
+    requestUrl.pathname === baseUrl.pathname ||
+    requestUrl.pathname.startsWith(normalizedBase)
+  );
+}
 
 const init = (config, mirrorzRepo) => {
   const jsdom = require("jsdom");
@@ -16,6 +38,22 @@ const init = (config, mirrorzRepo) => {
   });
   async function fetchV6First(u, opt) {
     const url = typeof u === "string" ? u : (u?.url ?? String(u));
+    const localFetchFile = isNodeRuntime()
+      ? process.env.MIRRORZ_LOCAL_FETCH_FILE
+      : undefined;
+
+    if (localFetchFile) {
+      /* A hack for more reliable local file fetching on mirrorz server */
+      const requestUrl = new URL(url, config.url);
+      const baseUrl = new URL(config.url);
+      if (isUrlUnderBase(requestUrl, baseUrl)) {
+        const content = await readFile(localFetchFile);
+        return new fetch_extra.Response(content, {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+    }
 
     const mkTimeoutErr = (label, ms) =>
       new Error(`fetchV6First ${label} timeout after ${ms}ms: ${url}`);
