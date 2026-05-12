@@ -31,6 +31,7 @@ const nyist = require("./nyist");
 const jcut = require("./jcut");
 const nwafu = require("./nwafu");
 const hust = require("./hust");
+const ha = require("./ha");
 
 const config = require('./config.json')
 
@@ -72,4 +73,5 @@ module.exports = {
   "jcut"    : async () => lint(await jcut    (site("jcut"    ))),
   "nwafu"   : async () => lint(await nwafu   (site("nwafu"   ))),
   "hust"    : async () => lint(await hust    (site("hust"    ))),
+  "ha"      : async () => lint(await ha      (site("ha"      ))),
 };
